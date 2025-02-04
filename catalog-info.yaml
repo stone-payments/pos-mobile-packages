@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  namespace: to-be-defined
+  name: pos-mobile-packages
+  title: Pos Mobile Packages
+  description: Repositorio para fornecer os artefatos do POS Mobile
+  annotations:
+    legacy.stone.tech/owner-email: gabriel.xsilva@stone.com.br
+spec:
+  type: service
+  lifecycle: experimental
+  owner: stone-payments/pos-android-writer
