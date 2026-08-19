@@ -1,21 +1,34 @@
 # Deployment Guide — pos-mobile-packages
 
-Este guia explica como fazer deploy e publicar artefatos do projeto.
+Central guide for publishing and deploying artifacts to GitHub Packages registry.
+
+## 🏗️ Arquitetura de Deploy
+
+`pos-mobile-packages` é um **registry Maven central** que publica múltiplos artefatos POS:
+
+### Por que publicar aqui?
+
+- GitHub Packages **não aceita GitHub App tokens** para `packages:write`
+- Só aceita **PAT clássico** ou **`GITHUB_TOKEN` automático**
+- O `GITHUB_TOKEN` nativo só funciona para pacotes do **mesmo repo**
+- Pacotes `co.stone.pos.mobile:*` pertencem a este repo → publicam aqui
+
+### Padrão de Deploy Cross-Repo
+
+Quando um pacote é desenvolvido em outro repo:
+
+1. **Source Repository (ex: pos-android-hal):** Cria release com tag
+2. **pos-mobile-packages:** Checkout cross-repo e publica no registry
+
+---
 
 ## 📦 Publicar HAL API em GitHub Packages
 
 ### Contexto
 
-O `hal-api` é desenvolvido em `pos-android-hal`, mas publicado em `pos-mobile-packages` GitHub Packages registry porque:
-
-- GitHub Packages **não aceita tokens de GitHub App** como autenticação para `packages:write`
-- Só aceita **PAT clássico** ou **`GITHUB_TOKEN` automático**
-- O `GITHUB_TOKEN` nativo só funciona para pacotes que pertencem ao **mesmo repositório**
-- Como `co.stone.pos.mobile:hal-api-*` é publicado aqui (pos-mobile-packages), o publish deve rodar neste repo
+O `hal-api` é desenvolvido em `pos-android-hal`, mas publicado aqui porque segue o padrão acima.
 
 ### Fluxo de Release
-
-O release é em **2 passos**:
 
 1. **pos-android-hal:** Cria tag `hal-api/x.y.z` + GitHub Release (workflow "HAL API Release")
 2. **pos-mobile-packages:** Publica AAR em GitHub Packages (workflow "Publish HAL API to GitHub Packages")
@@ -100,9 +113,71 @@ on:
 
 ---
 
-## 📝 Outras Operações
+## 🚀 Adicionar Novos Deployments
 
-*(Espaço reservado para futuras operações de deploy)*
+Para publicar um novo pacote `co.stone.pos.mobile:*`:
+
+### 1. Criar Workflow
+
+Crie um novo workflow em `.github/workflows/publish-<package>.yml`:
+
+```yaml
+name: Publish <Package Name> to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag da release (ex: <package>/1.0.0)'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          repository: stone-payments/<source-repo>
+          ref: ${{ inputs.tag }}
+          token: ${{ secrets.GH_HARDWARE_MAMBA_SETUP_PRIVATE_KEY || secrets.GITHUB_TOKEN }}
+      
+      - name: Publish to GitHub Packages
+        run: ./gradlew :<package>:publishAllPublicationsToGitHubPackagesRepository
+        env:
+          GITHUB_PUBLISH_USERNAME: x-access-token
+          GITHUB_PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PACKAGES_REPOSITORY_URL: https://maven.pkg.github.com/stone-payments/pos-mobile-packages
+```
+
+### 2. Configurar Secrets
+
+Adicione ao nível de organização em `stone-payments`:
+- `GH_HARDWARE_MAMBA_SETUP_PRIVATE_KEY` (se cross-repo)
+- `PACKAGECLOUD_READ_TOKEN*` (se aplicável)
+
+### 3. Documentar
+
+Adicione uma seção similar a "Publicar HAL API" neste guia.
+
+### 4. Testar
+
+Rode o workflow com uma tag de teste e valide:
+- ✅ Workflow completa sem erros
+- ✅ Pacote aparece em `https://maven.pkg.github.com/stone-payments/pos-mobile-packages`
+- ✅ Consumidor consegue fazer download
+
+---
+
+## 📝 Deployments Ativos
+
+| Pacote | Fonte | Workflow | Status |
+|--------|-------|----------|--------|
+| `hal-api` | `pos-android-hal` | `publish-hal-api.yml` | ✅ Ativo |
 
 ---
 
