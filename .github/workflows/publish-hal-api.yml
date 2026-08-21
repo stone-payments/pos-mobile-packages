@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Generate GitHub App token (cross-repo checkout only)
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: stone-payments/approved-actions/actions/create-github-app-token/v3@stable
         with:
           app-id: ${{ env.GH_APP_ID }}
           private-key: ${{ secrets.GH_HARDWARE_MAMBA_SETUP_PRIVATE_KEY }}
@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Checkout pos-android-hal at the release tag
-        uses: actions/checkout@v4
+        uses: stone-payments/approved-actions/actions/checkout/v4@stable
         with:
           repository: stone-payments/pos-android-hal
           ref: ${{ inputs.tag }}
@@ -60,7 +60,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: stone-payments/approved-actions/actions/setup-java/v4@stable
         with:
           java-version: '17'
           distribution: 'temurin'
